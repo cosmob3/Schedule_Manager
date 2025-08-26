@@ -72,6 +72,32 @@ Sunday 12/22: OFF`);
     setShifts(mockShifts);
     setCurrentStep(4);
   };
+  const addToCalendar = async () => {
+    for (const shift of shifts) {
+      const payload = {
+        title: `${shift.position} Shift`,
+        description: shift.notes,
+        startISO: `${shift.date}T${shift.startTime}:00`,
+        endISO: `${shift.date}T${shift.endTime}:00`,
+        location: shift.location,
+      };
+
+      const res = await fetch("/api/calendar/create-events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("Calendar error:", err);
+        alert(`Failed to add ${shift.date} shift`);
+      } else {
+        console.log("Event created:", await res.json());
+      }
+    }
+    alert("All shifts added to Google Calendar!");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-600 to-green-800 p-4">
@@ -237,11 +263,11 @@ Sunday 12/22: OFF`);
             </div>
             <div className="mt-6">
               <button
-                onClick={() => setCurrentStep(4)}
-                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+                onClick={addToCalendar}
+                className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Calendar className="inline w-5 h-5 mr-2" />
-                Add to Calendar
+                Send Shifts to Google Calendar
               </button>
             </div>
           </div>

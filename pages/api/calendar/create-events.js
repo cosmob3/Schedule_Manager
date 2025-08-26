@@ -1,56 +1,49 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
-import {
-  getGoogleCalendarClient,
-  createCalendarEvent,
-} from "../../../lib/googleCalendar";
+// pages/api/calendar/create-events.js
+import { google } from "@googleapis/calendar";
+import { getToken } from "next-auth/jwt";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") return res.status(405).end();
+
+  // Grab the user’s NextAuth token (contains accessToken from our JWT callback)
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  if (!token?.accessToken) {
+    return res.status(401).json({ error: "Not authenticated with Google" });
   }
-
-  const session = await getServerSession(req, res, authOptions);
-
-  if (!session || !session.accessToken) {
-    return res.status(401).json({ error: "Not authenticated" });
+  if (token?.error) {
+    // If refresh failed, ask the user to reconnect Google
+    return res.status(401).json({ error: token.error });
   }
 
   try {
-    const { shifts } = req.body;
-
-    if (!Array.isArray(shifts) || shifts.length === 0) {
-      return res.status(400).json({ error: "Shifts array is required" });
+    const { title, description, startISO, endISO, location } = req.body || {};
+    if (!title || !startISO || !endISO) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const calendar = getGoogleCalendarClient(session.accessToken);
-    const results = [];
+    // Auth client with the (fresh) access token from NextAuth
+    const auth = new google.auth.OAuth2();
+    auth.setCredentials({ access_token: token.accessToken });
 
-    for (const shift of shifts) {
-      try {
-        const event = await createCalendarEvent(calendar, shift);
-        results.push({ success: true, event, shift });
-      } catch (error) {
-        results.push({ success: false, error: error.message, shift });
-      }
-    }
+    const calendar = google.calendar({ version: "v3", auth });
 
-    const successCount = results.filter((r) => r.success).length;
-    const failureCount = results.length - successCount;
+    const event = {
+      summary: title,
+      description,
+      location,
+      start: { dateTime: startISO, timeZone: "America/Edmonton" }, // change if needed
+      end: { dateTime: endISO, timeZone: "America/Edmonton" },
+    };
 
-    res.status(200).json({
-      message: `Created ${successCount} events${
-        failureCount > 0 ? `, ${failureCount} failed` : ""
-      }`,
-      results,
-      summary: {
-        total: results.length,
-        success: successCount,
-        failed: failureCount,
-      },
+    const r = await calendar.events.insert({
+      calendarId: "primary",
+      requestBody: event,
     });
-  } catch (error) {
-    console.error("Calendar API Error:", error);
-    res.status(500).json({ error: "Failed to create calendar events" });
+
+    return res.status(200).json(r.data);
+  } catch (err) {
+    console.error("Calendar insert error:", err);
+    return res.status(500).json({ error: "Failed to create event" });
   }
 }

@@ -9,7 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@googleapis/calendar": "^11.0.1",
     "date-fns": "^2.30.0",
+    "google-auth-library": "^10.3.0",
     "googleapis": "^128.0.0",
     "idb": "^8.0.3",
     "lucide-react": "^0.263.1",
