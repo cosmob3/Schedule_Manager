@@ -1,103 +1,290 @@
-import Image from "next/image";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Upload, Calendar, CheckCircle, AlertCircle } from "lucide-react";
+
+interface Shift {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  position: string;
+  notes: string;
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [extractedText, setExtractedText] = useState("");
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      setCurrentStep(2);
+      // Here you would call your OCR API
+      simulateOCR(file);
+    }
+  };
+
+  const simulateOCR = async (file: File) => {
+    setIsProcessing(true);
+    // Simulate OCR processing
+    setTimeout(() => {
+      setExtractedText(`Schedule for Week of 12/16/2024
+Monday 12/16: 8:00 AM - 4:00 PM
+Tuesday 12/17: 10:00 AM - 6:00 PM  
+Wednesday 12/18: OFF
+Thursday 12/19: 7:00 AM - 3:00 PM
+Friday 12/20: 12:00 PM - 8:00 PM
+Saturday 12/21: 9:00 AM - 5:00 PM
+Sunday 12/22: OFF`);
+      setIsProcessing(false);
+      setCurrentStep(3);
+    }, 2000);
+  };
+
+  const parseSchedule = () => {
+    // Simulate parsing the extracted text into shifts
+    const mockShifts: Shift[] = [
+      {
+        id: "1",
+        date: "2024-12-16",
+        startTime: "08:00",
+        endTime: "16:00",
+        location: "Starbucks",
+        position: "Barista",
+        notes: "Monday shift",
+      },
+      {
+        id: "2",
+        date: "2024-12-17",
+        startTime: "10:00",
+        endTime: "18:00",
+        location: "Starbucks",
+        position: "Barista",
+        notes: "Tuesday shift",
+      },
+    ];
+    setShifts(mockShifts);
+    setCurrentStep(4);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-600 to-green-800 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center text-white mb-8">
+          <h1 className="text-4xl font-bold mb-2">
+            ☕ Starbucks Schedule Manager
+          </h1>
+          <p className="text-lg">
+            Upload your schedule image and add shifts to Google Calendar
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Progress Steps */}
+        <div className="flex justify-center mb-8">
+          <div className="flex items-center space-x-4">
+            {[1, 2, 3, 4].map((step) => (
+              <div key={step} className="flex items-center">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                    currentStep >= step
+                      ? "bg-white text-green-600"
+                      : "bg-green-500 text-white"
+                  }`}
+                >
+                  {currentStep > step ? (
+                    <CheckCircle className="w-5 h-5" />
+                  ) : (
+                    step
+                  )}
+                </div>
+                {step < 4 && (
+                  <div
+                    className={`w-16 h-1 ${
+                      currentStep > step ? "bg-white" : "bg-green-500"
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Step 1: Upload */}
+        {currentStep >= 1 && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              <Upload className="inline w-6 h-6 mr-2" />
+              Step 1: Upload Schedule Image
+            </h2>
+            <div className="border-2 border-dashed border-green-300 rounded-lg p-8 text-center">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                id="image-upload"
+              />
+              <label htmlFor="image-upload" className="cursor-pointer">
+                <div className="text-6xl mb-4">📷</div>
+                <p className="text-lg text-gray-600 mb-2">
+                  Click to upload your Starbucks schedule
+                </p>
+                <p className="text-sm text-gray-500">
+                  Supports JPG, PNG, WebP formats
+                </p>
+              </label>
+              {selectedImage && (
+                <div className="mt-4 text-green-600 font-semibold">
+                  ✓ Image selected: {selectedImage.name}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: OCR Processing */}
+        {currentStep >= 2 && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Step 2: Extract Text from Image
+            </h2>
+            {isProcessing ? (
+              <div className="text-center py-8">
+                <div className="animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-gray-600">Processing your image...</p>
+              </div>
+            ) : (
+              <div>
+                <div className="bg-gray-100 rounded-lg p-4 mb-4 max-h-48 overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm">
+                    {extractedText}
+                  </pre>
+                </div>
+                <button
+                  onClick={parseSchedule}
+                  className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Parse Schedule
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 3: Review Shifts */}
+        {currentStep >= 3 && shifts.length > 0 && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Step 3: Review Parsed Shifts
+            </h2>
+            <div className="space-y-4">
+              {shifts.map((shift) => (
+                <div
+                  key={shift.id}
+                  className="border rounded-lg p-4 bg-gray-50"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Date
+                      </label>
+                      <input
+                        type="date"
+                        value={shift.date}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Start Time
+                      </label>
+                      <input
+                        type="time"
+                        value={shift.startTime}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        End Time
+                      </label>
+                      <input
+                        type="time"
+                        value={shift.endTime}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Position
+                      </label>
+                      <input
+                        type="text"
+                        value={shift.position}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6">
+              <button
+                onClick={() => setCurrentStep(4)}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Calendar className="inline w-5 h-5 mr-2" />
+                Add to Calendar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Calendar Integration */}
+        {currentStep >= 4 && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Step 4: Calendar Integration
+            </h2>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5 mr-3" />
+                <div>
+                  <p className="text-blue-800 font-medium">
+                    Google Calendar Integration Required
+                  </p>
+                  <p className="text-blue-600 text-sm mt-1">
+                    To add events to your Google Calendar, you'll need to
+                    authenticate with Google. This demo shows what events would
+                    be created.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {shifts.map((shift, index) => (
+                <div
+                  key={shift.id}
+                  className="flex items-center p-3 bg-green-50 rounded-lg"
+                >
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
+                  <span className="text-green-800">
+                    Would create: {shift.location} shift on {shift.date} from{" "}
+                    {shift.startTime} to {shift.endTime}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
