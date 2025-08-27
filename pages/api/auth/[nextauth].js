@@ -1,4 +1,3 @@
-// pages/api/auth/[...nextauth].js
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
@@ -62,17 +61,9 @@ export const authOptions = {
         return token;
       }
 
-      // If token not expired, use it
-      if (token.expiresAt && Date.now() < token.expiresAt - 60_000) {
+      if (token.expiresAt && Date.now() < token.expiresAt - 60_000)
         return token;
-      }
-
-      // Otherwise refresh
-      if (token.refreshToken) {
-        return await refreshAccessToken(token);
-      }
-
-      // No refresh token available
+      if (token.refreshToken) return await refreshAccessToken(token);
       return { ...token, error: "NoRefreshToken" };
     },
 

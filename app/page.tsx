@@ -20,58 +20,56 @@ export default function Home() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // 1) Upload → call OCR
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      setCurrentStep(2);
-      // Here you would call your OCR API
-      simulateOCR(file);
-    }
+    if (!file) return;
+    setSelectedImage(file);
+    setCurrentStep(2);
+    runOCR(file); // call real OCR
   };
 
-  const simulateOCR = async (file: File) => {
+  const runOCR = async (file: File) => {
     setIsProcessing(true);
-    // Simulate OCR processing
-    setTimeout(() => {
-      setExtractedText(`Schedule for Week of 12/16/2024
-Monday 12/16: 8:00 AM - 4:00 PM
-Tuesday 12/17: 10:00 AM - 6:00 PM  
-Wednesday 12/18: OFF
-Thursday 12/19: 7:00 AM - 3:00 PM
-Friday 12/20: 12:00 PM - 8:00 PM
-Saturday 12/21: 9:00 AM - 5:00 PM
-Sunday 12/22: OFF`);
-      setIsProcessing(false);
-      setCurrentStep(3);
-    }, 2000);
+    const fd = new FormData();
+    fd.append("image", file);
+    const res = await fetch("/api/ocr", { method: "POST", body: fd });
+    setIsProcessing(false);
+
+    if (!res.ok) {
+      alert("OCR failed");
+      return;
+    }
+    const data = await res.json(); // { text }
+    setExtractedText(data.text || "");
+    setCurrentStep(3);
   };
 
-  const parseSchedule = () => {
-    // Simulate parsing the extracted text into shifts
-    const mockShifts: Shift[] = [
-      {
-        id: "1",
-        date: "2024-12-16",
-        startTime: "08:00",
-        endTime: "16:00",
-        location: "Starbucks",
-        position: "Barista",
-        notes: "Monday shift",
-      },
-      {
-        id: "2",
-        date: "2024-12-17",
-        startTime: "10:00",
-        endTime: "18:00",
-        location: "Starbucks",
-        position: "Barista",
-        notes: "Tuesday shift",
-      },
-    ];
-    setShifts(mockShifts);
+  // 2) Parse → /api/parse-schedule
+  const parseSchedule = async () => {
+    if (!extractedText) return;
+    const res = await fetch("/api/parse-schedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: extractedText }),
+    });
+    if (!res.ok) {
+      alert("Parsing failed");
+      return;
+    }
+    const data = await res.json(); // { shifts: Shift[] }
+    setShifts(data.shifts || []);
     setCurrentStep(4);
   };
+
+  // 3) Edit shifts in-place
+  const updateShift = (id: string, patch: Partial<Shift>) => {
+    setShifts((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...patch } : s))
+    );
+  };
+
+  // 4) Send to Google Calendar
   const addToCalendar = async () => {
     for (const shift of shifts) {
       const payload = {
@@ -81,19 +79,15 @@ Sunday 12/22: OFF`);
         endISO: `${shift.date}T${shift.endTime}:00`,
         location: shift.location,
       };
-
       const res = await fetch("/api/calendar/create-events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       if (!res.ok) {
-        const err = await res.json();
-        console.error("Calendar error:", err);
-        alert(`Failed to add ${shift.date} shift`);
-      } else {
-        console.log("Event created:", await res.json());
+        const msg = await res.text();
+        alert(`Failed to add ${shift.date} shift: ${msg}`);
+        return;
       }
     }
     alert("All shifts added to Google Calendar!");
@@ -188,7 +182,7 @@ Sunday 12/22: OFF`);
               </div>
             ) : (
               <div>
-                <div className="bg-gray-100 rounded-lg p-4 mb-4 max-h-48 overflow-y-auto">
+                <div className="bg-black rounded-lg p-4 mb-4 max-h-48 overflow-y-auto">
                   <pre className="whitespace-pre-wrap text-sm">
                     {extractedText}
                   </pre>
@@ -224,6 +218,9 @@ Sunday 12/22: OFF`);
                       <input
                         type="date"
                         value={shift.date}
+                        onChange={(e) =>
+                          updateShift(shift.id, { date: e.target.value })
+                        }
                         className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                       />
                     </div>
@@ -234,7 +231,9 @@ Sunday 12/22: OFF`);
                       <input
                         type="time"
                         value={shift.startTime}
-                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                        onChange={(e) =>
+                          updateShift(shift.id, { startTime: e.target.value })
+                        }
                       />
                     </div>
                     <div>
@@ -244,7 +243,9 @@ Sunday 12/22: OFF`);
                       <input
                         type="time"
                         value={shift.endTime}
-                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                        onChange={(e) =>
+                          updateShift(shift.id, { endTime: e.target.value })
+                        }
                       />
                     </div>
                     <div>
@@ -254,22 +255,16 @@ Sunday 12/22: OFF`);
                       <input
                         type="text"
                         value={shift.position}
-                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                        onChange={(e) =>
+                          updateShift(shift.id, { position: e.target.value })
+                        }
                       />
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="mt-6">
-              <button
-                onClick={addToCalendar}
-                className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Calendar className="inline w-5 h-5 mr-2" />
-                Send Shifts to Google Calendar
-              </button>
-            </div>
+            <div className="mt-6"></div>
           </div>
         )}
 
@@ -308,6 +303,14 @@ Sunday 12/22: OFF`);
                 </div>
               ))}
             </div>
+
+            <button
+              onClick={addToCalendar}
+              className="mt-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Calendar className="inline w-5 h-5 mr-2" />
+              Send Shifts to Google Calendar
+            </button>
           </div>
         )}
       </div>
