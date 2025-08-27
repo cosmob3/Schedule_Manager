@@ -1,4 +1,3 @@
-// pages/api/parse-schedule.js
 import StarbucksScheduleParser from "../../lib/scheduleParser";
 
 export default async function handler(req, res) {
@@ -16,9 +15,9 @@ export default async function handler(req, res) {
 
   try {
     const parser = new StarbucksScheduleParser();
-    const raw = parser.parse(text);
+    const parsed = parser.parse(text);
 
-    const shifts = raw.map((s, i) => ({
+    const shifts = parsed.map((s, i) => ({
       id: String(i + 1),
       date: s.date,
       startTime: s.startTime,
