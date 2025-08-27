@@ -224,7 +224,7 @@ export default function Home() {
                         onChange={(e) =>
                           updateShift(shift.id, { date: e.target.value })
                         }
-                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                        className="mt-1 block w-full border border-gray-300 text-gray-900 rounded-md px-3 py-2"
                       />
                     </div>
                     <div>
@@ -237,6 +237,7 @@ export default function Home() {
                         onChange={(e) =>
                           updateShift(shift.id, { startTime: e.target.value })
                         }
+                        className=" text-gray-900"
                       />
                     </div>
                     <div>
@@ -249,6 +250,7 @@ export default function Home() {
                         onChange={(e) =>
                           updateShift(shift.id, { endTime: e.target.value })
                         }
+                        className=" text-gray-900"
                       />
                     </div>
                     <div>
@@ -261,6 +263,7 @@ export default function Home() {
                         onChange={(e) =>
                           updateShift(shift.id, { position: e.target.value })
                         }
+                        className=" text-gray-900"
                       />
                     </div>
                   </div>
