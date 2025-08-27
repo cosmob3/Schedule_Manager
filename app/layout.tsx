@@ -1,27 +1,16 @@
-import React from "react";
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
+import type { ReactNode } from "react";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
-
-export const metadata: Metadata = {
+export const metadata = {
   title: "Starbucks Schedule Manager",
-  description: "Parse Starbucks schedules and add to Google Calendar",
+  description: "OCR → parse → Google Calendar",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>

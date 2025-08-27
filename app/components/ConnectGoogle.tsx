@@ -1,42 +1,57 @@
 "use client";
 
-import { useSession, signIn, signOut } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 
 export default function ConnectGoogle() {
   const { data: session, status } = useSession();
   const loading = status === "loading";
 
+  const here = () => window.location.href;
+
+  const handleSignIn = () => {
+    // ensure we persist right before redirect (belt & suspenders)
+    window.dispatchEvent(new Event("sm:persist"));
+    const back = here();
+    sessionStorage.setItem("sm.returnTo", back);
+    signIn("google", { callbackUrl: back });
+  };
+
+  const handleSignOut = () => {
+    window.dispatchEvent(new Event("sm:persist"));
+    const back = here();
+    signOut({ callbackUrl: back });
+  };
+
   if (loading) {
     return (
-      <button
-        disabled
-        className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md cursor-not-allowed"
-      >
-        Checking Google connection…
+      <button className="px-4 py-2 rounded bg-gray-300 text-gray-600" disabled>
+        Checking Google…
       </button>
     );
   }
 
-  if (!session) {
+  if (session) {
     return (
-      <button
-        onClick={() => signIn("google")}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
-      >
-        Connect Google
-      </button>
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-gray-700">
+          Connected as <strong>{session.user?.email}</strong>
+        </span>
+        <button
+          onClick={handleSignOut}
+          className="px-3 py-2 rounded bg-gray-100 hover:bg-gray-200 text-gray-800"
+        >
+          Disconnect
+        </button>
+      </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-green-700 font-medium">✅ Connected to Google</span>
-      <button
-        onClick={() => signOut()}
-        className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-md"
-      >
-        Sign out
-      </button>
-    </div>
+    <button
+      onClick={handleSignIn}
+      className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+    >
+      Connect Google
+    </button>
   );
 }
