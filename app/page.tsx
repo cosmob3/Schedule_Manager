@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Upload, Calendar, CheckCircle, AlertCircle } from "lucide-react";
+import { useSession } from "next-auth/react";
+import ConnectGoogle from "./components/ConnectGoogle";
 
 interface Shift {
   id: string;
@@ -19,6 +21,7 @@ export default function Home() {
   const [extractedText, setExtractedText] = useState("");
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const { data: session } = useSession();
 
   // 1) Upload → call OCR
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,30 +277,41 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Step 4: Calendar Integration
             </h2>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <div className="flex items-start">
-                <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5 mr-3" />
-                <div>
-                  <p className="text-blue-800 font-medium">
-                    Google Calendar Integration Required
-                  </p>
-                  <p className="text-blue-600 text-sm mt-1">
-                    To add events to your Google Calendar, you'll need to
-                    authenticate with Google. This demo shows what events would
-                    be created.
-                  </p>
+
+            {/* Connect / Status */}
+            <div className="mb-4">
+              <ConnectGoogle />
+            </div>
+
+            {/* Helper notice only when not connected */}
+            {!session && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5 mr-3" />
+                  <div>
+                    <p className="text-blue-800 font-medium">
+                      Google Calendar Integration Required
+                    </p>
+                    <p className="text-blue-600 text-sm mt-1">
+                      Connect your Google account to create events in your
+                      calendar.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              {shifts.map((shift, index) => (
+            )}
+
+            {/* Preview of events to be created */}
+            <div className="space-y-2 mb-4">
+              {shifts.map((shift) => (
                 <div
                   key={shift.id}
                   className="flex items-center p-3 bg-green-50 rounded-lg"
                 >
                   <CheckCircle className="w-5 h-5 text-green-500 mr-3" />
                   <span className="text-green-800">
-                    Would create: {shift.location} shift on {shift.date} from{" "}
+                    {session ? "Ready to create:" : "Would create:"}{" "}
+                    {shift.location} shift on {shift.date} from{" "}
                     {shift.startTime} to {shift.endTime}
                   </span>
                 </div>
@@ -306,7 +320,13 @@ export default function Home() {
 
             <button
               onClick={addToCalendar}
-              className="mt-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+              disabled={!session}
+              className={`mt-2 px-6 py-3 rounded-lg transition-colors ${
+                session
+                  ? "bg-green-600 hover:bg-green-700 text-white"
+                  : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              }`}
+              title={session ? "" : "Connect Google first"}
             >
               <Calendar className="inline w-5 h-5 mr-2" />
               Send Shifts to Google Calendar
