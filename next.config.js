@@ -38,6 +38,32 @@ const withPWA = require("next-pwa")({
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+
+  // ➜ IMPORTANT: let Webpack load .wasm used by tesseract.js
+  webpack: (config, { isServer }) => {
+    // enable async WebAssembly
+    config.experiments = {
+      ...(config.experiments || {}),
+      asyncWebAssembly: true,
+    };
+
+    // treat .wasm as async modules
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: "webassembly/async",
+    });
+
+    // make sure Node-only modules don't break client bundles
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...(config.resolve.fallback || {}),
+        fs: false,
+        path: false,
+      };
+    }
+
+    return config;
+  },
 };
 
 module.exports = withPWA(nextConfig);
