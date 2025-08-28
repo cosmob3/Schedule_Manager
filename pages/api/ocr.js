@@ -1,6 +1,7 @@
 // pages/api/ocr.js
 import multer from "multer";
-import Tesseract from "tesseract.js";
+import path from "path";
+import { createWorker } from "tesseract.js";
 
 // Let multer handle multipart/form-data (so we get a Buffer)
 export const config = {
@@ -32,9 +33,17 @@ export default async function handler(req, res) {
         .json({ error: "No image uploaded (field name should be 'image')." });
     }
 
-    // Simple, reliable server-side OCR (no worker paths needed)
-    const { data } = await Tesseract.recognize(req.file.buffer, "eng");
+    const worker = await createWorker({
+      corePath: require.resolve("tesseract.js-core/tesseract-core.wasm"),
+      workerPath: require.resolve("tesseract.js/dist/worker.min.js"),
+      langPath: path.join(process.cwd(), "eng.traineddata"),
+    });
+    await worker.load();
+    await worker.loadLanguage("eng");
+    await worker.initialize("eng");
+    const { data } = await worker.recognize(req.file.buffer);
     const text = (data?.text || "").trim();
+    await worker.terminate();
 
     return res.status(200).json({ text });
   } catch (err) {
