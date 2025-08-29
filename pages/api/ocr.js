@@ -16,7 +16,7 @@ const upload = multer({
     }
     cb(null, true);
   },
-  limits: { fileSize: 8 * 1024 * 1024 }, // 8 MB
+  limits: { fileSize: 8 * 1024 * 1024 },
 });
 
 const acceptEitherField = upload.fields([
@@ -46,18 +46,20 @@ export default async function handler(req, res) {
     if (!file?.buffer)
       return res.status(400).json({ error: "No image uploaded" });
 
-    // IMPORTANT: Load worker/core/lang from CDN so Vercel doesn't need local .wasm files
     const { createWorker } = await import("tesseract.js");
+    // Log the version so we know what’s actually running in the lambda
+    try {
+      const pkg = await import("tesseract.js/package.json");
+      console.log("TESSERACT_VERSION", pkg.version);
+    } catch {}
+
+    // v4 + CDN paths (NO local filesystem access)
     const worker = await createWorker({
-      // tesseract.js runtime
-      workerPath:
-        "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js",
-      // use non-SIMD core to avoid filename mismatches
+      workerPath: "https://unpkg.com/tesseract.js@4.1.1/dist/worker.min.js",
       corePath:
-        "https://cdn.jsdelivr.net/npm/tesseract.js-core@5.0.0/tesseract-core.wasm",
-      // traineddata files
-      langPath: "https://tessdata.projectnaptha.com/5",
-      logger: () => {}, // silence logs (optional)
+        "https://unpkg.com/tesseract.js-core@2.2.0/tesseract-core.wasm.js",
+      langPath: "https://tessdata.projectnaptha.com/4.0.0",
+      logger: () => {},
     });
 
     await worker.load();
