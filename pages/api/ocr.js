@@ -1,3 +1,4 @@
+// pages/api/ocr.js
 import multer from "multer";
 
 export const config = {
@@ -5,13 +6,10 @@ export const config = {
   api: { bodyParser: false },
 };
 
-// In-memory storage + basic image-only filter
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter: (_req, file, cb) => {
-    // accept image/* only
     if (!file.mimetype || !file.mimetype.startsWith("image/")) {
-      // Use MulterError so it shows cleanly in Vercel logs
       return cb(
         new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname)
       );
@@ -21,7 +19,6 @@ const upload = multer({
   limits: { fileSize: 8 * 1024 * 1024 }, // 8 MB
 });
 
-// Allow either 'file' or 'image' field names
 const acceptEitherField = upload.fields([
   { name: "file", maxCount: 1 },
   { name: "image", maxCount: 1 },
@@ -29,17 +26,15 @@ const acceptEitherField = upload.fields([
 
 function runMiddleware(req, res, fn) {
   return new Promise((resolve, reject) => {
-    fn(req, res, (result) => {
-      if (result instanceof Error) return reject(result);
-      return resolve(result);
-    });
+    fn(req, res, (result) =>
+      result instanceof Error ? reject(result) : resolve(result)
+    );
   });
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
+  if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
-  }
 
   try {
     await runMiddleware(req, res, acceptEitherField);
@@ -48,14 +43,23 @@ export default async function handler(req, res) {
       (req.files?.file && req.files.file[0]) ||
       (req.files?.image && req.files.image[0]);
 
-    if (!file || !file.buffer) {
+    if (!file?.buffer)
       return res.status(400).json({ error: "No image uploaded" });
-    }
 
-    // Dynamically import so it's only loaded in Node
+    // IMPORTANT: Load worker/core/lang from CDN so Vercel doesn't need local .wasm files
     const { createWorker } = await import("tesseract.js");
+    const worker = await createWorker({
+      // tesseract.js runtime
+      workerPath:
+        "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js",
+      // use non-SIMD core to avoid filename mismatches
+      corePath:
+        "https://cdn.jsdelivr.net/npm/tesseract.js-core@5.0.0/tesseract-core.wasm",
+      // traineddata files
+      langPath: "https://tessdata.projectnaptha.com/5",
+      logger: () => {}, // silence logs (optional)
+    });
 
-    const worker = await createWorker();
     await worker.load();
     await worker.loadLanguage("eng");
     await worker.initialize("eng");
@@ -66,7 +70,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ text: (data?.text || "").trim() });
   } catch (err) {
     console.error("OCR Error:", err);
-    // Surface Multer errors clearly
     if (err?.name === "MulterError") {
       return res.status(400).json({ error: err.code || "Upload error" });
     }
