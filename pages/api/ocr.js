@@ -46,18 +46,15 @@ export default async function handler(req, res) {
     if (!file?.buffer)
       return res.status(400).json({ error: "No image uploaded" });
 
+    // pages/api/ocr.js  (only the worker section shown here)
     const { createWorker } = await import("tesseract.js");
-    // Log the version so we know what’s actually running in the lambda
-    try {
-      const pkg = await import("tesseract.js/package.json");
-      console.log("TESSERACT_VERSION", pkg.version);
-    } catch {}
 
-    // v4 + CDN paths (NO local filesystem access)
     const worker = await createWorker({
-      workerPath: "https://unpkg.com/tesseract.js@4.1.1/dist/worker.min.js",
-      corePath:
-        "https://unpkg.com/tesseract.js-core@2.2.0/tesseract-core.wasm.js",
+      // Node requires a file path, not a URL:
+      workerPath: require.resolve("tesseract.js/dist/worker.min.js"),
+      // v4 core JS wrapper (will load its wasm neighbor automatically)
+      corePath: require.resolve("tesseract.js-core/tesseract-core.wasm.js"),
+      // Language data can live on a CDN
       langPath: "https://tessdata.projectnaptha.com/4.0.0",
       logger: () => {},
     });
