@@ -1,5 +1,6 @@
 // pages/api/ocr.js
 import multer from "multer";
+import path from "path";
 
 export const config = {
   runtime: "nodejs",
@@ -46,15 +47,19 @@ export default async function handler(req, res) {
     if (!file?.buffer)
       return res.status(400).json({ error: "No image uploaded" });
 
-    // pages/api/ocr.js  (only the worker section shown here)
     const { createWorker } = await import("tesseract.js");
 
-   const worker = await createWorker('eng', 1, {
-  logger: () => {},
-});
+    // Use CDN URLs for all Tesseract resources
+    const worker = await createWorker('eng', 1, {
+      workerPath: "https://unpkg.com/tesseract.js@4.1.1/dist/worker.min.js",
+      corePath: "https://unpkg.com/tesseract.js-core@4.0.3",
+      langPath: "https://tessdata.projectnaptha.com/4.0.0",
+      logger: () => {},
+    });
 
-const { data } = await worker.recognize(file.buffer);
-await worker.terminate();
+    const { data } = await worker.recognize(file.buffer);
+    await worker.terminate();
+
     return res.status(200).json({ text: (data?.text || "").trim() });
   } catch (err) {
     console.error("OCR Error:", err);
