@@ -49,20 +49,12 @@ export default async function handler(req, res) {
     // pages/api/ocr.js  (only the worker section shown here)
     const { createWorker } = await import("tesseract.js");
 
-   const worker = await createWorker({
-     workerPath: "https://unpkg.com/tesseract.js@4.1.1/dist/worker.min.js",
-      corePath: "https://unpkg.com/tesseract.js-core@4.0.3/tesseract-core.wasm.js",
-      langPath: "https://tessdata.projectnaptha.com/4.0.0",
-    logger: () => {},
-    });
+   const worker = await createWorker('eng', 1, {
+  logger: () => {},
+});
 
-    await worker.load();
-    await worker.loadLanguage("eng");
-    await worker.initialize("eng");
-
-    const { data } = await worker.recognize(file.buffer);
-    await worker.terminate();
-
+const { data } = await worker.recognize(file.buffer);
+await worker.terminate();
     return res.status(200).json({ text: (data?.text || "").trim() });
   } catch (err) {
     console.error("OCR Error:", err);
