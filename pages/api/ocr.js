@@ -49,14 +49,11 @@ export default async function handler(req, res) {
     // pages/api/ocr.js  (only the worker section shown here)
     const { createWorker } = await import("tesseract.js");
 
-    const worker = await createWorker({
-      // Node requires a file path, not a URL:
-      workerPath: require.resolve("tesseract.js/dist/worker.min.js"),
-      // v4 core JS wrapper (will load its wasm neighbor automatically)
-      corePath: require.resolve("tesseract.js-core/tesseract-core.wasm.js"),
-      // Language data can live on a CDN
+   const worker = await createWorker({
+     workerPath: "https://unpkg.com/tesseract.js@4.1.1/dist/worker.min.js",
+      corePath: "https://unpkg.com/tesseract.js-core@4.0.3/tesseract-core.wasm.js",
       langPath: "https://tessdata.projectnaptha.com/4.0.0",
-      logger: () => {},
+    logger: () => {},
     });
 
     await worker.load();
